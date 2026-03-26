@@ -1,0 +1,34 @@
+from django.contrib.auth.base_user import BaseUserManager
+from django.contrib.auth.models import Group
+
+from utils.enums import GroupNames
+
+
+class UserManager(BaseUserManager):
+    use_in_migrations =True
+    
+    
+    def create_user(self, email,password=None,  **extra_fields):
+        
+        if not email:
+            raise ValueError('email is required')
+        
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)
+        
+        customer_group, created = Group.objects.get_or_create(name=GroupNames.ADMIN.value)
+        user.save(using=self.db)
+        user.groups.add(customer_group)
+        return user
+    
+    def create_superuser(self, email, password, **extra_fields):
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('is_active', True)
+        
+
+        
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError(('super user must have is_staff true'))
+        
+        return self.create_user(email, password,**extra_fields)
